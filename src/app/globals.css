@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+@theme {
+  /* Cigarra primary blue */
+  --color-primary-50: #f0f7fc;
+  --color-primary-100: #d9edf8;
+  --color-primary-200: #b3dbf1;
+  --color-primary-300: #7cc0e6;
+  --color-primary-400: #3fa1d6;
+  --color-primary-500: #167bae;
+  --color-primary-600: #12659a;
+  --color-primary-700: #0f5080;
+  --color-primary-800: #0d3d63;
+  --color-primary-900: #0a2d4a;
+  --color-primary-950: #071c30;
+
+  /* Cigarra accent gold */
+  --color-accent-50: #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+  --color-accent-700: #b45309;
+
+  --color-ink: #0a2d4a;
+  --color-ink-soft: #334155;
+  --color-paper: #fafafa;
+  --color-paper-2: #f1f5f9;
+
+  --font-heading: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html, body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #167bae, #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-mesh {
+  background-color: #0a2d4a;
+  background-image:
+    radial-gradient(at 20% 10%, rgba(22, 123, 174, 0.55) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(245, 158, 11, 0.35) 0px, transparent 50%),
+    radial-gradient(at 70% 100%, rgba(22, 123, 174, 0.45) 0px, transparent 60%);
+}
+
+@keyframes pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.animate-pop { animation: pop 320ms cubic-bezier(.2, .9, .3, 1.2); }
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 12s linear infinite; }
+
+@keyframes pulse-ring {
+  0%   { transform: scale(0.85); opacity: 0.85; }
+  100% { transform: scale(1.6);  opacity: 0; }
+}
+.pulse-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.35);
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+/* Bingo ball */
+.bingo-ball {
+  position: relative;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.85), rgba(255,255,255,0) 45%),
+    linear-gradient(135deg, #167bae 0%, #0f5080 100%);
+  color: white;
+  box-shadow: 0 8px 24px rgba(15, 80, 128, 0.35), inset 0 -6px 14px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.bingo-ball.gold {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.85), rgba(255,255,255,0) 45%),
+    linear-gradient(135deg, #fbbf24 0%, #b45309 100%);
+  box-shadow: 0 8px 24px rgba(180, 83, 9, 0.4), inset 0 -6px 14px rgba(0,0,0,0.18);
+}
+
+/* Carton cell */
+.cell {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 200ms ease;
+  position: relative;
+  user-select: none;
+}
+.cell.marked {
+  background: linear-gradient(135deg, #167bae, #0f5080);
+  color: white;
+  border-color: #0f5080;
+  transform: scale(0.96);
+}
+.cell.marked::after {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 9999px;
+  border: 3px solid rgba(245, 158, 11, 0.85);
+}
+.cell.free {
+  background: linear-gradient(135deg, #f59e0b, #b45309);
+  color: white;
+  border-color: #b45309;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
