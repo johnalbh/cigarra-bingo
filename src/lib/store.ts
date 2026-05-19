@@ -131,6 +131,9 @@ export function drawNext(): { number: number | null; state: GameState } {
     s.game.status = "live";
     s.game.startedAt = Date.now();
   }
+  if (s.game.status === "paused") {
+    return { number: null, state: s.game };
+  }
   const n = nextRandomNumber(s.game.drawn);
   if (n === null) {
     s.game.status = "finished";
@@ -139,6 +142,65 @@ export function drawNext(): { number: number | null; state: GameState } {
   s.game.drawn.push(n);
   s.game.lastDrawAt = Date.now();
   return { number: n, state: s.game };
+}
+
+export function setGameStatus(
+  next: "live" | "paused" | "finished"
+): GameState {
+  const s = store();
+  if (next === "live") {
+    if (s.game.status === "idle" || s.game.status === "paused") {
+      s.game.status = "live";
+      if (!s.game.startedAt) s.game.startedAt = Date.now();
+    }
+  } else if (next === "paused") {
+    if (s.game.status === "live") s.game.status = "paused";
+  } else if (next === "finished") {
+    s.game.status = "finished";
+  }
+  return s.game;
+}
+
+export function createAdminCartones(input: {
+  ownerName: string;
+  ownerEmail?: string;
+  quantity: number;
+  note?: string;
+}): Carton[] {
+  const s = store();
+  const quantity = Math.max(1, Math.min(50, Math.floor(input.quantity)));
+  const purchaseId = makeId("adm");
+  const ownerEmail = (input.ownerEmail ?? "admin@cigarra.org").toLowerCase();
+  const cartones: Carton[] = [];
+
+  for (let i = 0; i < quantity; i++) {
+    const id = makeId("crt");
+    const carton: Carton = {
+      id,
+      code: generateCartonCode(),
+      ownerName: input.ownerName,
+      ownerEmail,
+      numbers: generateCartonNumbers(),
+      createdAt: Date.now(),
+      purchaseId,
+    };
+    s.cartones.set(id, carton);
+    cartones.push(carton);
+  }
+
+  const purchase: Purchase = {
+    id: purchaseId,
+    ownerName: input.ownerName,
+    ownerEmail,
+    quantity,
+    amount: 0,
+    currency: "COP",
+    status: "paid",
+    cartonIds: cartones.map((c) => c.id),
+    createdAt: Date.now(),
+  };
+  s.purchases.set(purchaseId, purchase);
+  return cartones;
 }
 
 export function resetGame(): GameState {
