@@ -24,14 +24,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const { purchase, cartones } = createPurchase({
+    const { purchase, cartones, token } = createPurchase({
       ownerName,
       ownerEmail,
       ownerPhone,
       quantity,
     });
 
-    return NextResponse.json({ purchase, cartones }, { status: 201 });
+    return NextResponse.json(
+      { purchase, cartones, token, magicLink: `/talonario/${token}` },
+      { status: 201 }
+    );
   } catch (err) {
     return NextResponse.json(
       { error: "Error procesando la compra" },

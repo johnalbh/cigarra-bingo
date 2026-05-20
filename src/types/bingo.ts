@@ -28,6 +28,16 @@ export type Purchase = {
   createdAt: number;
 };
 
+export type TalonarioView = {
+  email: string;
+  ownerName: string;
+  totalCartones: number;
+  totalPurchases: number;
+  totalAmount: number;
+  purchases: Purchase[];
+  cartones: Carton[];
+};
+
 export type GameState = {
   status: "idle" | "live" | "paused" | "finished";
   drawn: number[];

@@ -15,9 +15,11 @@ export default function ComprarPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [result, setResult] = useState<{
     purchase: Purchase;
     cartones: Carton[];
+    token: string;
   } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -43,6 +45,10 @@ export default function ComprarPage() {
         new Set([...existing, ...data.cartones.map((c: Carton) => c.id)])
       );
       localStorage.setItem("cigarra_bingo_cartones", JSON.stringify(next));
+      // Persist the magic link token too
+      if (data.token) {
+        localStorage.setItem("cigarra_bingo_token", data.token);
+      }
       setResult(data);
     } catch (err) {
       setError("No se pudo conectar al servidor");
@@ -52,9 +58,22 @@ export default function ComprarPage() {
   }
 
   if (result) {
+    const magicUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/talonario/${result.token}`
+        : `/talonario/${result.token}`;
+
+    async function copy() {
+      try {
+        await navigator.clipboard.writeText(magicUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      } catch {}
+    }
+
     return (
       <section className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-8">
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-6">
           <div className="text-green-700 text-sm font-semibold">
             ✓ Compra exitosa (demo)
           </div>
@@ -62,45 +81,73 @@ export default function ComprarPage() {
             ¡Listo, {result.purchase.ownerName.split(" ")[0]}!
           </h1>
           <p className="text-slate-700 mt-2">
-            Has comprado <b>{result.purchase.quantity}</b> cartón
+            Tienes <b>{result.purchase.quantity}</b> cartón
             {result.purchase.quantity === 1 ? "" : "es"} por{" "}
             <b>COP {result.purchase.amount.toLocaleString("es-CO")}</b>.
           </p>
-          <p className="text-slate-700 mt-2 text-sm">
-            Enviamos los códigos al correo <b>{result.purchase.ownerEmail}</b>.
-            Guarda este enlace para acceder a tus cartones:
+        </div>
+
+        {/* Magic link — primary CTA */}
+        <div className="bg-gradient-to-br from-primary-600 to-primary-800 text-white rounded-2xl p-6 sm:p-8 shadow-xl">
+          <div className="text-xs uppercase tracking-widest text-primary-100/80">
+            Tu enlace mágico
+          </div>
+          <h2 className="text-2xl font-extrabold mt-1">
+            Accede a todos tus cartones desde un solo lugar
+          </h2>
+          <p className="text-primary-100/90 mt-2 text-sm">
+            Enviamos este enlace a <b>{result.purchase.ownerEmail}</b>.
+            Guárdalo: te da acceso a tu talonario completo, en cualquier
+            dispositivo.
           </p>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {result.cartones.map((c) => (
-            <Link
-              key={c.id}
-              href={`/carton/${c.id}`}
-              className="block rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white p-6 hover:scale-[1.02] transition shadow-lg"
+          <div className="mt-5 bg-white/10 ring-1 ring-white/20 rounded-xl p-3 flex items-center gap-2">
+            <code className="flex-1 text-xs sm:text-sm break-all font-mono text-accent-200">
+              {magicUrl}
+            </code>
+            <button
+              onClick={copy}
+              className="px-3 py-2 rounded-lg bg-accent-500 hover:bg-accent-600 text-white text-sm font-bold whitespace-nowrap"
             >
-              <div className="text-xs uppercase tracking-wide opacity-80">
-                Cartón
-              </div>
-              <div className="text-2xl font-extrabold font-mono mt-1">
-                {c.code}
-              </div>
-              <div className="text-xs opacity-80 mt-3">Abrir →</div>
+              {copied ? "✓" : "Copiar"}
+            </button>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              href={`/talonario/${result.token}`}
+              className="px-5 py-3 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-bold shadow-lg shadow-accent-500/30"
+            >
+              Abrir mi talonario →
             </Link>
-          ))}
+            <Link
+              href="/jugar"
+              className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold ring-1 ring-white/30"
+            >
+              Ver juego en vivo
+            </Link>
+          </div>
         </div>
-        <div className="mt-8 flex gap-3">
-          <Link
-            href="/mis-cartones"
-            className="px-5 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold"
-          >
-            Ir a mis cartones
-          </Link>
-          <Link
-            href="/jugar"
-            className="px-5 py-3 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-semibold"
-          >
-            Ver juego en vivo
-          </Link>
+
+        {/* Codes summary */}
+        <div className="mt-8">
+          <div className="text-xs uppercase tracking-wide text-slate-500 mb-3">
+            Tus cartones ({result.cartones.length})
+          </div>
+          <div className="grid sm:grid-cols-3 gap-3">
+            {result.cartones.map((c) => (
+              <Link
+                key={c.id}
+                href={`/carton/${c.id}`}
+                className="block rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 text-white p-4 hover:scale-[1.02] transition shadow"
+              >
+                <div className="text-[10px] uppercase tracking-wide opacity-80">
+                  Cartón
+                </div>
+                <div className="text-xl font-extrabold font-mono mt-0.5">
+                  {c.code}
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
     );

@@ -26,10 +26,10 @@ export function Navbar() {
             En vivo
           </Link>
           <Link
-            href="/mis-cartones"
+            href="/talonario"
             className="px-3 py-2 rounded-lg text-slate-700 hover:text-primary-600 hover:bg-primary-50 transition"
           >
-            Mis cartones
+            Mi talonario
           </Link>
           <Link
             href="/comprar"

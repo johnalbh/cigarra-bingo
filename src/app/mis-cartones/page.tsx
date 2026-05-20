@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Carton } from "@/types/bingo";
 
 export default function MisCartonesPage() {
+  const router = useRouter();
   const [cartones, setCartones] = useState<Carton[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // If user already has a magic-link token, take them directly to their talonario.
+  useEffect(() => {
+    const token = localStorage.getItem("cigarra_bingo_token");
+    if (token) {
+      router.replace(`/talonario/${token}`);
+    }
+  }, [router]);
 
   useEffect(() => {
     const ids: string[] = JSON.parse(

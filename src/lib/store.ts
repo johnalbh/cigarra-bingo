@@ -19,6 +19,10 @@ import {
 type Store = {
   cartones: Map<string, Carton>;
   purchases: Map<string, Purchase>;
+  /** token → email (lowercase) */
+  tokenToEmail: Map<string, string>;
+  /** email (lowercase) → token */
+  emailToToken: Map<string, string>;
   game: GameState;
   adminToken: string;
 };
@@ -45,9 +49,46 @@ function init(): Store {
   return {
     cartones: new Map(),
     purchases: new Map(),
+    tokenToEmail: new Map(),
+    emailToToken: new Map(),
     game: freshGame(),
     adminToken: process.env.ADMIN_TOKEN ?? "cigarra-demo",
   };
+}
+
+function randomToken(bytes = 16): string {
+  // Base36 from crypto random when available, fallback to Math.random
+  const out: string[] = [];
+  const cryptoObj: Crypto | undefined =
+    typeof globalThis !== "undefined" ? (globalThis as any).crypto : undefined;
+  if (cryptoObj?.getRandomValues) {
+    const buf = new Uint8Array(bytes);
+    cryptoObj.getRandomValues(buf);
+    return Array.from(buf, (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  for (let i = 0; i < bytes; i++) {
+    out.push(Math.floor(Math.random() * 256).toString(16).padStart(2, "0"));
+  }
+  return out.join("");
+}
+
+/**
+ * Returns a stable magic-link token per email.
+ * Creates one if it doesn't exist.
+ */
+export function ensureTokenForEmail(email: string): string {
+  const s = store();
+  const key = email.toLowerCase();
+  const existing = s.emailToToken.get(key);
+  if (existing) return existing;
+  const token = randomToken(20);
+  s.emailToToken.set(key, token);
+  s.tokenToEmail.set(token, key);
+  return token;
+}
+
+export function getEmailForToken(token: string): string | undefined {
+  return store().tokenToEmail.get(token);
 }
 
 function store(): Store {
@@ -66,10 +107,11 @@ export function createPurchase(input: {
   ownerEmail: string;
   ownerPhone?: string;
   quantity: number;
-}): { purchase: Purchase; cartones: Carton[] } {
+}): { purchase: Purchase; cartones: Carton[]; token: string } {
   const s = store();
   const quantity = Math.max(1, Math.min(20, Math.floor(input.quantity)));
   const purchaseId = makeId("pur");
+  const ownerEmail = input.ownerEmail.toLowerCase();
   const cartones: Carton[] = [];
 
   for (let i = 0; i < quantity; i++) {
@@ -78,7 +120,7 @@ export function createPurchase(input: {
       id,
       code: generateCartonCode(),
       ownerName: input.ownerName,
-      ownerEmail: input.ownerEmail,
+      ownerEmail,
       numbers: generateCartonNumbers(),
       createdAt: Date.now(),
       purchaseId,
@@ -90,7 +132,7 @@ export function createPurchase(input: {
   const purchase: Purchase = {
     id: purchaseId,
     ownerName: input.ownerName,
-    ownerEmail: input.ownerEmail,
+    ownerEmail,
     ownerPhone: input.ownerPhone,
     quantity,
     amount: quantity * CARTON_PRICE_COP,
@@ -101,7 +143,35 @@ export function createPurchase(input: {
   };
 
   s.purchases.set(purchaseId, purchase);
-  return { purchase, cartones };
+  const token = ensureTokenForEmail(ownerEmail);
+  return { purchase, cartones, token };
+}
+
+/**
+ * Aggregates all purchases + cartones for the email associated with the token.
+ */
+export function getTalonarioByToken(token: string) {
+  const s = store();
+  const email = s.tokenToEmail.get(token);
+  if (!email) return null;
+  const purchases = Array.from(s.purchases.values())
+    .filter((p) => p.ownerEmail.toLowerCase() === email)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  const cartones = Array.from(s.cartones.values())
+    .filter((c) => c.ownerEmail.toLowerCase() === email)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  const ownerName =
+    cartones[0]?.ownerName ?? purchases[0]?.ownerName ?? email;
+  const totalAmount = purchases.reduce((acc, p) => acc + p.amount, 0);
+  return {
+    email,
+    ownerName,
+    totalCartones: cartones.length,
+    totalPurchases: purchases.length,
+    totalAmount,
+    purchases,
+    cartones,
+  };
 }
 
 export function getCarton(id: string): Carton | undefined {
@@ -200,6 +270,7 @@ export function createAdminCartones(input: {
     createdAt: Date.now(),
   };
   s.purchases.set(purchaseId, purchase);
+  ensureTokenForEmail(ownerEmail);
   return cartones;
 }
 
